@@ -1,19 +1,20 @@
-import React from 'react';
+import React from "react";
 import {
   StyleSheet,
   View,
-  FlatList, 
+  FlatList,
   Dimensions,
   StatusBar,
   Image,
   TouchableHighlight,
   Platform
-} from 'react-native';
+} from "react-native";
 
 import ListItem from "../components/ListItem";
-import * as ImagePicker from 'expo-image-picker';
+import * as ImagePicker from "expo-image-picker";
+import * as Permissions from "expo-permissions";
 
-const ITEM_WIDTH = Dimensions.get('window').width;
+const ITEM_WIDTH = Dimensions.get("window").width;
 
 export default class HomeScreen extends React.Component {
   constructor() {
@@ -22,8 +23,8 @@ export default class HomeScreen extends React.Component {
     this.state = {
       images: [],
       columns: 2,
-      key: 1  
-    }
+      key: 1
+    };
   }
 
   componentDidMount() {
@@ -32,45 +33,53 @@ export default class HomeScreen extends React.Component {
 
   getImageData = () => {
     fetch("http://dev-test.depicture.io/api/files", {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
+        Accept: "application/json",
+        "Content-Type": "application/json"
       }
     })
-    .then((response) => response.json())
-    .then((responseJson) => {
-      this.setState({ images: [...responseJson]});
-    })
-  }
+      .then(response => response.json())
+      .then(responseJson => {
+        this.setState({ images: [...responseJson] });
+      });
+  };
 
   openCamera = async () => {
-    let result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true
-    })
-    let formdata = new FormData();
-    formdata.append("file", {
-      name: `${new Date().getTime()}.jpg`,
-      type: "image/jpeg",
-      uri: Platform.OS === "android" ? result.uri : result.uri.replace("file://", "")
-    })
-    
-    fetch("http://dev-test.depicture.io/api/upload", {
-      method: "POST",
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'multipart/form-data'
-      },  
-      body: formdata
-    })
-    .then(() => {
-      this.getImageData();
-    })
+    const permission = await Permissions.getAsync(Permissions.CAMERA_ROLL);
+    if (permission.status !== "granted") {
+      await Permissions.askAsync(Permissions.CAMERA_ROLL);
+    }
+    if (permission.status === "granted") {
+      let result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true
+      });
+      let formdata = new FormData();
+      formdata.append("file", {
+        name: `${new Date().getTime()}.jpg`,
+        type: "image/jpeg",
+        uri:
+          Platform.OS === "android"
+            ? result.uri
+            : result.uri.replace("file://", "")
+      });
+
+      fetch("http://dev-test.depicture.io/api/upload", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "multipart/form-data"
+        },
+        body: formdata
+      }).then(() => {
+        this.getImageData();
+      });
+    }
   };
-  
-  _handleOnSaveUserPhotoPicker = async (photo) => {
+
+  _handleOnSaveUserPhotoPicker = async photo => {
     console.log(photo);
-  }
+  };
 
   render() {
     const { columns, images, key } = this.state;
@@ -79,22 +88,37 @@ export default class HomeScreen extends React.Component {
         <TouchableHighlight
           onPress={() => this.openCamera()}
           style={{ ...styles.button }}
-          underlayColor="#2E75B5">
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          underlayColor="#2E75B5"
+        >
+          <View
+            style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+          >
             <Image source={require("../assets/camera/cameraIcon.png")} />
           </View>
         </TouchableHighlight>
         <FlatList
           numColumns={columns}
           data={images}
-          renderItem={({item, index}) => {
+          renderItem={({ item, index }) => {
             if (item.path.includes(".") == false)
-              return (<ListItem key={index} itemWidth={(ITEM_WIDTH-10*(columns))/columns} image={{uri: null}} />)
-            return <ListItem key={index} itemWidth={(ITEM_WIDTH-10*(columns))/columns} image={{uri: item.path}} />
+              return (
+                <ListItem
+                  key={index}
+                  itemWidth={(ITEM_WIDTH - 10 * columns) / columns}
+                  image={{ uri: null }}
+                />
+              );
+            return (
+              <ListItem
+                key={index}
+                itemWidth={(ITEM_WIDTH - 10 * columns) / columns}
+                image={{ uri: item.path }}
+              />
+            );
           }}
-          keyExtractor={
-            (item, index) => { return `${item.name + index}` }
-          }
+          keyExtractor={(item, index) => {
+            return `${item.name + index}`;
+          }}
         />
       </View>
     );
@@ -104,23 +128,22 @@ export default class HomeScreen extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5FCFF',
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F5FCFF",
     marginTop: StatusBar.currentHeight
   },
   button: {
-    backgroundColor: '#1D5D96',
-    alignItems: 'center',
-    shadowColor: 'black',
+    backgroundColor: "#1D5D96",
+    alignItems: "center",
+    shadowColor: "black",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.24,
     shadowRadius: 2,
     height: 48,
-    width: 150, 
+    width: 150,
     margin: 10,
     borderRadius: 10
-  },
-  
+  }
 });

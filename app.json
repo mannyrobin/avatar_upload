@@ -24,7 +24,17 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
-    }
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tim.travelradar"
+    },
+    "android": {
+      "package": "com.tim.travelradar",
+      "permissions": [
+        "CAMERA",
+        "CAMERA_ROLL",
+        "READ_INTERNAL_STORAGE",
+        "WRITE_INTERNAL_STORAGE"
+      ]
+    },
   }
 }
